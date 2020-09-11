@@ -1,92 +1,78 @@
 import React, { Component } from 'react';
-import LinksParserForm from './LinksParserForm';
-import Loader from 'react-loader-spinner';
-import style from './LinksParser.module.scss';
+import Form from './Form';
+import Table from './Table';
+import PropTypes from 'prop-types';
+
+const initialState = {
+  isFetching: false,
+  error: null,
+  results: [],
+};
 
 class LinksParser extends Component {
   constructor(props) {
     super(props);
 
-    this.state = {
-      isFetching: false,
-      error: null,
-      htmlText: '',
-    };
+    this.state = initialState;
   }
 
   handleSubmit = ({ values: { urlValue } }) => {
+    this.setState(initialState);
     this.fetchData(urlValue);
   };
 
   fetchData = url => {
-    this.setState({ isFetching: true, error: null, htmlText: '' });
+    this.setState({ isFetching: true });
 
     fetch(url, {
       'method': 'GET',
       'Content-type': 'text/html',
     })
       .then(response => response.text())
-      .then(data => this.setState({ htmlText: data }))
-      .catch(error => this.setState({ error: true }))
+      .then(data => this.parseHtml(data))
+      .catch(error => this.setState({ error }))
       .finally(() => this.setState({ isFetching: false }));
   };
 
-  getLinks = () => {
-    const { htmlText } = this.state;
-    return [...htmlText.matchAll(this.regExp)];
+  parseHtml = htmlText => {
+    const { pattern } = this.props;
+
+    this.setState({
+      results: [...htmlText.matchAll(new RegExp(pattern, 'gm'))],
+    });
   };
 
-  regExp = /<\s*a\s*(?:\s*[a-z]+\s*=\s*(?:['"])(?:.*?)(?:['"]))*?\s*href\s*=\s*(?<quote>['"])(?<link>.*?)\k<quote>(?:\s*[a-z]+\s*=\s*(?:['"])(?:.*?)(?:['"]))*?\s*>(?<linkLabel>.*?)<\/a>/gm;
-
   render() {
-    const { isFetching, error } = this.state;
+    const { isFetching, error, results } = this.state;
+
+    let status = null;
+
+    if (error) {
+      status = <p>{error.message}</p>;
+    }
+
+    if (isFetching) {
+      status = 'Fetching...';
+    }
+
     return (
-      <>
-        <LinksParserForm onSubmit={this.handleSubmit} />
-
-        {isFetching && (
-          <Loader
-            type="Puff"
-            color="#00BFFF"
-            height={200}
-            width={200}
-            className={style.loader}
-          />
-        )}
-
-        {error ? (
-          <p>{'Something wrong, try another link'}</p>
-        ) : (
-          <table className={style.container}>
-            <thead>
-              <tr>
-                <th>{'Hyperlink Value'}</th>
-                <th>{'Link Label'}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {this.getLinks().map((item, index) => (
-                <tr key={index}>
-                  <td>
-                    <a
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      href={item.groups.link}
-                    >
-                      {item.groups.link}
-                    </a>
-                  </td>
-                  <td>
-                    <p>{item.groups.linkLabel}</p>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </>
+      <article>
+        <h1>Parser</h1>
+        <Form onSubmit={this.handleSubmit} />
+        <h2> Status: {status} </h2>
+        <Table links={results} />
+      </article>
     );
   }
 }
+
+LinksParser.propTypes = {
+  pattern: PropTypes.string,
+};
+
+LinksParser.defaultProps = {
+  pattern:
+    '<\\s*a\\s*(?:\\s*[a-z]+\\s*=\\s*(?:[\'"])(?:.*?)(?:[\'"]))*?\\s*href\\s*=\\s*(?<quote>[\'"])(?<link>.*?)\\k<quote>(?:\\s*[a-z]+\\s*=\\s*(?:[\'"])(?:.*?)(?:[\'"]))*?\\s*>(?<linkLabel>.*?)<\\/a>',
+};
 
 export default LinksParser;

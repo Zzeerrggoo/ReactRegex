@@ -2,7 +2,7 @@ import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 import { string, isSchema } from 'yup';
 
-class LinksParserFrom extends Component {
+class Form extends Component {
   constructor(props) {
     super(props);
 
@@ -60,7 +60,7 @@ class LinksParserFrom extends Component {
   }
 }
 
-LinksParserFrom.propTypes = {
+Form.propTypes = {
   onSubmit: PropTypes.func.isRequired,
   validationSchema: function (props, propName) {
     const validationSchemaPropValue = props[propName];
@@ -70,8 +70,8 @@ LinksParserFrom.propTypes = {
   },
 };
 
-LinksParserFrom.defaultProps = {
+Form.defaultProps = {
   validationSchema: string().url().required(),
 };
 
-export default LinksParserFrom;
+export default Form;
